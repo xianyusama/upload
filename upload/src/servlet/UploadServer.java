@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -14,6 +15,11 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
+
+import com.alibaba.fastjson.JSON;
+
+import model.FileData;
+import model.ResponseData;
 
 /*
  *      将请求消息实体中的每一个项目封装成单独的DiskFileItem (FileItem接口的实现) 对象的任务
@@ -55,6 +61,8 @@ public class UploadServer extends HttpServlet {
 
 		// 创建一个ServletFileUpload对象
 		ServletFileUpload uploader = new ServletFileUpload(factory);
+		List<FileData> fileDatas = new ArrayList<FileData> ();
+		ResponseData responseData= new ResponseData();
 		try {
 
 			/**
@@ -62,6 +70,7 @@ public class UploadServer extends HttpServlet {
 			 * FileItem是指org.apache.commons.fileupload中定义的，他可以代表一个文件，
 			 * 也可以代表一个普通的formfield
 			 */
+
 			ArrayList<FileItem> list = (ArrayList<FileItem>) uploader.parseRequest(req);
 			System.out.println(list.size());
 			for (FileItem fileItem : list) {
@@ -77,6 +86,11 @@ public class UploadServer extends HttpServlet {
 					String fileName = value.substring(start + 1);
 					// 将其中包含的内容写到path()下，即upload目录下，名为fileName的文件中
 					fileItem.write(new File(path, fileName));
+					FileData fileData= new FileData();
+					fileData.setCreateTime(String.valueOf(System.currentTimeMillis()));
+					fileData.setName(fileName);
+					fileData.setServerPath("http://192.168.1.146:8080/upload/upload/"+fileName);
+					fileDatas.add(fileData);
 				}
 			}
 		} catch (Exception e) {
@@ -84,7 +98,9 @@ public class UploadServer extends HttpServlet {
 		}
 		// 向客户端返回结果
 		PrintWriter out = resp.getWriter();
-		out.println("ok");
+		responseData.setFileDatas(fileDatas);
+		String response=JSON.toJSONString(responseData);
+		out.println(response);
 		out.flush();
 		out.close();
 	}
